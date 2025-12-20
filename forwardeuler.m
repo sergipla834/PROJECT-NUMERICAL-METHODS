@@ -18,21 +18,23 @@ L = 200.0;      % [mm]
 T = 30.0;      % [days]
 p.L = L;
 
+% Parameters of the equation
 p.D    = 0.126; % [mm^2/days^-1]
 p.rho  = 1.0; % [0.012 days^-1}
 p.cmax = 1.0;
+
+% Parameters of the initial gaussian
 p.A = 0.1;
 p.x0 = p.L / 2;
 p.sigma = 10;
 
 Nx = 800;
 x  = linspace(0, L, Nx);
-dx = x(2) - x(1);
+dx = x(2) - x(1); % spatial step
 
-% Reference time grid (choose Nt = 20000 as in your figures)
 Nt = 20000;
 t  = linspace(0, T, Nt);
-dt = t(2) - t(1);
+dt = t(2) - t(1); % temporal step 
 
 % Stability check for Forward Euler (diffusion CFL)
 dt_max = dx^2/(2*p.D);
@@ -92,34 +94,26 @@ for n = 1:Nt-1
     C_FE(n+1,:) = c_next.';
 end
 
-%% (E) ABSOLUTE POINTWISE ERRORS + L_inf and L2 norms
+%% (E) ERRORS AND CALCULATION OF NORMS
 %%     Reference = MOL + ode45
 %% ==========================================================
 
 % ----------------------------------------------------------
-% Error absoluto punto a punto
+% Absolute error point per point
 % ----------------------------------------------------------
 Err = abs(C_FE - C_ode);     % Nt x Nx
 
 % ----------------------------------------------------------
-% (1) Error punto a punto en el ESPACIO (t = T)
+% (1) Absolute error in SPACE (t = T)
 % ----------------------------------------------------------
 e_space = Err(end,:);       % 1 x Nx
-
-% Normas espaciales (t = T)
-err_space_inf = max(e_space);
-err_space_L2  = sqrt( sum(e_space.^2) * dx );
-
-fprintf('\nERROR ESPACIAL (t = T) – Forward Euler vs ode45\n');
-fprintf('  ||error||_inf = %.3e\n', err_space_inf);
-fprintf('  ||error||_L2  = %.3e\n', err_space_L2);
 
 figure;
 plot(x, e_space, 'LineWidth', 2);
 grid on; box on;
 xlabel('x (mm)');
 ylabel('|error(x,T)|');
-title('Error absoluto punto a punto en el espacio (t = T)');
+title('Absolute error in space (t = T)');
 
 % ----------------------------------------------------------
 % (2) Error punto a punto en el TIEMPO (x = L/2)
@@ -129,24 +123,36 @@ x0 = L/2;
 
 e_time = Err(:,ix0);        % Nt x 1
 
-% Normas temporales (x = L/2)
-err_time_inf = max(e_time);
-err_time_L2  = sqrt( sum(e_time.^2) * dt );
-
-fprintf('\nERROR TEMPORAL (x = L/2) – Forward euler vs ode45\n');
-fprintf('  ||error||_inf = %.3e\n', err_time_inf);
-fprintf('  ||error||_L2  = %.3e\n', err_time_L2);
-
 figure;
 plot(t, e_time, 'LineWidth', 2);
 grid on; box on;
 xlabel('t (days)');
 ylabel('|error(x0,t)|');
-title(sprintf('Error absoluto punto a punto en el tiempo (x = %.2f ≈ L/2)', x(ix0)));
+title(sprintf('Absolute error in time (x = %.2f ≈ L/2)', x(ix0)));
 
+% ----------------------------------------------------------
+% (3) Calculation of norms (l2, l_inf, local absolute average error,
+% relative average error
+% ----------------------------------------------------------
 
+% (1) Global L2 error over space-time  (Eq. 18)
+err_global_L2 = sqrt( sum(Err(:).^2) * dx * dt );
 
+% (2) Global Linf error over space-time (Eq. 19)
+err_global_Linf = max(Err(:));
 
+% (3) Mean absolute local error (pointwise mean)
+err_mean_abs = mean(Err(:));
+
+% (4) Mean relative local error (pointwise mean of relative error)
+eps_rel = 1e-14;   % avoid division by zero
+err_mean_rel = mean( Err(:) ./ (abs(C_ode(:)) + eps_rel) );
+
+fprintf('\n===== ERROR METRICS vs ode45 =====\n');
+fprintf('Global error Linf (x,t) : %.4e\n', err_global_Linf);
+fprintf('Global error L2   (x,t) : %.4e\n', err_global_L2);
+fprintf('Mean relative error      : %.4e\n', err_mean_rel);
+fprintf('Mean absolute error      : %.4e\n', err_mean_abs);
 
 
 
