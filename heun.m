@@ -100,27 +100,19 @@ end
 
 
 %% ==========================================================
-%% (E) ABSOLUTE POINTWISE ERRORS + L_inf and L2 norms
+%% (E) ERRORS AND CALCULATION OF NORMS
 %%     Reference = MOL + ode45
 %% ==========================================================
 
 % ----------------------------------------------------------
-% Error absoluto punto a punto
+% Absolute error point per point
 % ----------------------------------------------------------
 Err = abs(C_H - C_ode);     % Nt x Nx
 
 % ----------------------------------------------------------
-% (1) Error punto a punto en el ESPACIO (t = T)
+% (1) Absolute error in space (t = T)
 % ----------------------------------------------------------
 e_space = Err(end,:);       % 1 x Nx
-
-% Normas espaciales (t = T)
-err_space_inf = max(e_space);
-err_space_L2  = sqrt( sum(e_space.^2) * dx );
-
-fprintf('\nERROR ESPACIAL (t = T) – Heun vs ode45\n');
-fprintf('  ||error||_inf = %.3e\n', err_space_inf);
-fprintf('  ||error||_L2  = %.3e\n', err_space_L2);
 
 figure;
 plot(x, e_space, 'LineWidth', 2);
@@ -130,20 +122,13 @@ ylabel('|error(x,T)|');
 title('Error absoluto punto a punto en el espacio (t = T)');
 
 % ----------------------------------------------------------
-% (2) Error punto a punto en el TIEMPO (x = L/2)
+% (2) Absolute error in TIME (x = L/2)
 % ----------------------------------------------------------
 x0 = L/2;
 [~, ix0] = min(abs(x - x0));
 
 e_time = Err(:,ix0);        % Nt x 1
 
-% Normas temporales (x = L/2)
-err_time_inf = max(e_time);
-err_time_L2  = sqrt( sum(e_time.^2) * dt );
-
-fprintf('\nERROR TEMPORAL (x = L/2) – Heun vs ode45\n');
-fprintf('  ||error||_inf = %.3e\n', err_time_inf);
-fprintf('  ||error||_L2  = %.3e\n', err_time_L2);
 
 figure;
 plot(t, e_time, 'LineWidth', 2);
@@ -152,7 +137,29 @@ xlabel('t (days)');
 ylabel('|error(x0,t)|');
 title(sprintf('Error absoluto punto a punto en el tiempo (x = %.2f ≈ L/2)', x(ix0)));
 
+% ----------------------------------------------------------
+% (3) Calculation of norms (l2, l_inf, local absolute average error,
+% relative average error
+% ----------------------------------------------------------
 
+% (1) Global L2 error over space-time  (Eq. 18)
+err_global_L2 = sqrt( sum(Err(:).^2) * dx * dt );
+
+% (2) Global Linf error over space-time (Eq. 19)
+err_global_Linf = max(Err(:));
+
+% (3) Mean absolute local error (pointwise mean)
+err_mean_abs = mean(Err(:));
+
+% (4) Mean relative local error (pointwise mean of relative error)
+eps_rel = 1e-14;   % avoid division by zero
+err_mean_rel = mean( Err(:) ./ (abs(C_ode(:)) + eps_rel) );
+
+fprintf('\n===== ERROR METRICS vs ode45 =====\n');
+fprintf('Global error Linf (x,t) : %.4e\n', err_global_Linf);
+fprintf('Global error L2   (x,t) : %.4e\n', err_global_L2);
+fprintf('Mean relative error      : %.4e\n', err_mean_rel);
+fprintf('Mean absolute error      : %.4e\n', err_mean_abs);
 
 
 
