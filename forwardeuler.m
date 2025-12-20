@@ -20,7 +20,7 @@ p.L = L;
 
 % Parameters of the equation
 p.D    = 0.126; % [mm^2/days^-1]
-p.rho  = 1.0; % [0.012 days^-1}
+p.rho  = 1.0; % [days^-1}
 p.cmax = 1.0;
 
 % Parameters of the initial gaussian
@@ -154,6 +154,21 @@ fprintf('Global error L2   (x,t) : %.4e\n', err_global_L2);
 fprintf('Mean relative error      : %.4e\n', err_mean_rel);
 fprintf('Mean absolute error      : %.4e\n', err_mean_abs);
 
+% ----------------------------------------------------------
+% (4) Representation of the 3D error
+% ----------------------------------------------------------
+
+[X,T] = meshgrid(x, t);
+figure;
+surf(X, T, Err, 'EdgeColor', 'none');
+view(45,30);
+colormap turbo;
+colorbar;
+
+xlabel('x (mm)');
+ylabel('t (days)');
+zlabel('|error|');
+title('Absolute error in space and time');
 
 
 %% ==========================================================
