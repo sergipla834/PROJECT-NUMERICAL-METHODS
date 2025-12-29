@@ -144,19 +144,36 @@ title('Rosenbrock1: absolute error |e(x,t)|');
 %% ==========================================================
 %% (E) Norms
 %% ==========================================================
+%% ==========================================================
+%% (E) Norms  (same strategy and variable names as CN code)
+%% ==========================================================
+
+% (1) Global L2 error over space-time
+err_global_L2 = sqrt( sum(Err(:).^2) * dx * dt );
+
+% (2) Global Linf error over space-time
 err_global_Linf = max(Err(:));
-err_global_L2   = sqrt(sum(Err(:).^2) * dx * dt);
 
-% Slices:
+% (3) Mean absolute local error (pointwise mean)
+err_mean_abs = mean(Err(:));
+
+% (4) Mean relative local error (pointwise mean of relative error)
+eps_rel = 1e-14;   % avoid division by zero
+err_mean_rel = mean( Err(:) ./ (abs(C_ode(:)) + eps_rel) );
+
+% (5) Slices (space at final time)
 err_space_Linf = max(e_space);
-err_space_L2   = sqrt(sum(e_space.^2) * dx);
+err_space_L2   = sqrt( sum(e_space.^2) * dx );
 
+% (6) Slices (time at x = L/2)
 err_time_Linf = max(e_time);
-err_time_L2   = sqrt(sum(e_time.^2) * dt);
+err_time_L2   = sqrt( sum(e_time.^2) * dt );
 
 fprintf('\n===== ROSENBROCK1 ERROR METRICS vs ode45 =====\n');
-fprintf('Global Linf (x,t): %.4e\n', err_global_Linf);
-fprintf('Global L2   (x,t): %.4e\n', err_global_L2);
+fprintf('Global error Linf (x,t) : %.4e\n', err_global_Linf);
+fprintf('Global error L2   (x,t) : %.4e\n', err_global_L2);
+fprintf('Mean relative error      : %.4e\n', err_mean_rel);
+fprintf('Mean absolute error      : %.4e\n', err_mean_abs);
 
 fprintf('\nAt t = T (space slice):\n');
 fprintf('  Linf: %.4e\n', err_space_Linf);
@@ -165,6 +182,7 @@ fprintf('  L2  : %.4e\n', err_space_L2);
 fprintf('\nAt x = L/2 (time slice):\n');
 fprintf('  Linf: %.4e\n', err_time_Linf);
 fprintf('  L2  : %.4e\n', err_time_L2);
+
 
 %% ==========================================================
 %                 LOCAL FUNCTIONS
