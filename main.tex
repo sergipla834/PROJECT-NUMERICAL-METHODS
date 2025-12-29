@@ -1,0 +1,63 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+
+\title{TABLAS NUMERICAL}
+\author{Victor Moll}
+\date{December 2025}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+
+
+\begin{table}[H]
+\centering
+\caption{Explicit methods VS ode45}
+\label{tab:explicit_vs_ode45}
+\begin{tabular}{lcccc}
+\hline
+Method vs ode45 & Global error $l_\infty$ & Global error $l_2$ & Mean relative error  & Mean absolute error \\
+\hline
+Forward Euler & $5.6717 \cdot 10^{-3}$ & $5.1863 \cdot 10^{-2}$ & $4.7967 \cdot 10^{-3}$ & $1.9572 \cdot 10^{-4}$ \\
+Heun         & $2.9942 \cdot 10^{-6}$ & $2.7272 \cdot 10^{-5}$ & $2.5917 \cdot 10^{-6}$ & $1.0579 \cdot 10^{-7}$ \\
+ERK4         & $9.3024 \cdot 10^{-9}$ & $8.1875 \cdot 10^{-8}$ & $9.2884 \cdot 10^{-9}$ & $3.0470 \cdot 10^{-10}$ \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\begin{table}[H]
+\centering
+\caption{Implicit Methods VS ode45}
+\label{tab:implicit_vs_ode45}
+\begin{tabular}{lcccc}
+\hline
+Method vs ode45 & Global error $l_\infty$ & Global error $l_2$ & Mean relative error  & Mean absolute error \\
+\hline
+Implicit Euler   & $5.6802 \cdot 10^{-3}$ & $5.1943 \cdot 10^{-2}$ & $4.8768 \cdot 10^{-3}$ & $1.9605 \cdot 10^{-4}$ \\
+Crank--Nicolson  & $1.3837 \cdot 10^{-6}$ & $1.2168 \cdot 10^{-5}$ & $1.2299 \cdot 10^{-6}$ & $4.4564 \cdot 10^{-8}$ \\
+Rosenbrock       & $1.8470 \cdot 10^{-2}$ & $1.6845 \cdot 10^{-1}$ & $1.5247\cdot 10^{-2}$ & $6.3307 \cdot 10^{-4}$ \\
+\hline
+\end{tabular}
+\end{table}
+
+
+\begin{table}[H]
+\centering
+\caption{Adaptative method VS ode45}
+\label{tab:adaptive_vs_ode45}
+\begin{tabular}{lcccc}
+\hline
+Method vs ode45 & Global error $l_\infty$ & Global error $l_2$ & Mean relative error  & Mean absolute error \\
+\hline
+ERK23 & $1.0467 \cdot 10^{-8}$  & $9.2175 \cdot 10^{-8}$  & $1.0318 \cdot 10^{-8}$  & $3.4274 \cdot 10^{-10}$ \\
+\hline
+\end{tabular}
+\end{table}
+
+
+
+\end{document}
