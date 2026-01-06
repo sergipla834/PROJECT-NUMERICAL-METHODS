@@ -1,21 +1,48 @@
-Nx = 800;
+% Execution time vs number of steps
 
+L = 200.0;      % [mm]
+T = 30.0;      % [days]
+p.L = L;
+
+% Parameters of the equation
+p.D    = 0.126; % [mm^2/days^-1]
+p.rho  = 1.0; % [days^-1}
+p.cmax = 1.0;
+
+% Parameters of the initial gaussian
+p.A = 0.1;
+p.x0 = p.L / 2;
+p.sigma = 10;
+
+Nx = 800;
+x  = linspace(0, L, Nx);
+dx = x(2) - x(1); % spatial step
+
+Nt = 20000;
+t  = linspace(0, T, Nt);
+dt = t(2) - t(1); % temporal step 
+
+% Different numbers of time steps
 Nt_values = [2000, 5000, 10000, 20000];
 
+% CPU time arrays
 cpu_FE  = zeros(size(Nt_values));
 cpu_RK4 = zeros(size(Nt_values));
 cpu_CN  = zeros(size(Nt_values));
 
+%% Initial condition (same for all solvers)
+c0 = ic_gaussian(x,p).';   % column vector
 for i = 1:length(Nt_values)
 
     Nt = Nt_values(i);
     
+    % --- Forward Euler
     C_FE = zeros(Nt, Nx);
     C_FE(1,:) = c0.';
     tStart = tic;
     for n = 1:Nt-1
        
-        c = C_FE(n,:).';  
+        c = C_FE(n,:).';  % column
 
         cxx = laplacian_neumann(c, dx);
         reaction = p.rho * c .* (1 - c/p.cmax);
@@ -28,18 +55,24 @@ for i = 1:length(Nt_values)
     end
     cpu_FE(i) = toc(tStart);
 
+    % --- Runge-Kutta 4
     tStart = tic;
     for n = 1:Nt-1
-        c = C_FE(n,:).';  
+        c = C_FE(n,:).';  % column vector at time t(n)
 
+    % k1 = f(c_n)
         k1 = rhs_MOL_reacdiff(c, p, dx, Nx);
 
+    % k2 = f(c_n + dt/2 * k1)
          k2 = rhs_MOL_reacdiff(c + 0.5*dt*k1, p, dx, Nx);
 
+    % k3 = f(c_n + dt/2 * k2)
         k3 = rhs_MOL_reacdiff(c + 0.5*dt*k2, p, dx, Nx);
 
+    % k4 = f(c_n + dt * k3)
         k4 = rhs_MOL_reacdiff(c + dt*k3, p, dx, Nx);
 
+    % ERK4 update: c_{n+1} = c_n + dt/6*(k1 + 2k2 + 2k3 + k4)
         c_next = c + (dt/6) * (k1 + 2*k2 + 2*k3 + k4);
 
     
@@ -49,7 +82,8 @@ for i = 1:length(Nt_values)
     end
     cpu_RK4(i) = toc(tStart);
 
-    Lmat = laplacian_matrix_neumann(Nx, dx); 
+    % --- Crank-Nicolson
+    Lmat = laplacian_matrix_neumann(Nx, dx); % sparse
     I = speye(Nx);
 
     C_CN = zeros(Nt, Nx);
@@ -61,11 +95,15 @@ for i = 1:length(Nt_values)
     for n = 1:Nt-1
         c_n = C_CN(n,:).';
 
+    % f(c_n)
     Rn = p.rho * c_n .* (1 - c_n/p.cmax);
     fn = p.D*(Lmat*c_n) + Rn;
 
+    % Predictor for Newton (explicit Euler step)
     c = c_n + dt*fn;
 
+    % We solve: c - c_n - dt/2 * [ f(c_n) + f(c) ] = 0
+    % => G(c) = c - c_n - dt/2*( fn + D*L*c + rho*c(1-c/cmax) ) = 0
     for k = 1:newton_maxit
         Rc  = p.rho * c .* (1 - c/p.cmax);
         fc  = p.D*(Lmat*c) + Rc;
@@ -76,7 +114,10 @@ for i = 1:length(Nt_values)
             break;
         end
 
-        dR = p.rho * (1 - 2*c/p.cmax); 
+        % Jacobian of G:
+        % G(c) = c - c_n - dt/2*( fn + D*L*c + R(c) )
+        % dG/dc = I - dt/2*( D*L + dR/dc )
+        dR = p.rho * (1 - 2*c/p.cmax); % vector
         J = I - (dt/2)*( p.D*Lmat + spdiags(dR,0,Nx,Nx) );
 
         delta = J \ G;
@@ -96,6 +137,7 @@ for i = 1:length(Nt_values)
 
 end
 
+% Plot CPU time vs Nt
 figure;
 plot(Nt_values, cpu_FE,  '-o', 'LineWidth', 1.5); hold on;
 plot(Nt_values, cpu_RK4, '-s', 'LineWidth', 1.5);
@@ -107,8 +149,9 @@ ylabel('Execution time (s)');
 legend('Forward Euler', 'RK4', 'Crank-Nicolson', 'Location', 'northwest');
 title('Execution time vs number of time steps');
 
+%% ==========================================================
 %                 LOCAL FUNCTIONS
-
+%% ==========================================================
 
 function u0 = ic_gaussian(x,p)
 u0 = p.A * exp(-(x - p.x0).^2 / (2*p.sigma^2));
@@ -143,7 +186,7 @@ L(Nx,Nx) = -2/dx^2; L(Nx,Nx-1) = 2/dx^2;
 end
 
 function cxx = laplacian_neumann(c, dx)
-
+% Same Laplacian used in MOL
 Nx = numel(c);
 cxx = zeros(Nx,1);
 cxx(2:Nx-1) = (c(1:Nx-2) - 2*c(2:Nx-1) + c(3:Nx)) / dx^2;
